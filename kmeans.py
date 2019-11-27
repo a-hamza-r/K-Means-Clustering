@@ -5,7 +5,9 @@ from numpy.linalg import norm;
 import sys;
 import statistics;
 from operator import add;
+from sklearn.cluster import KMeans
 
+## The class implements K-means clustering algorithm for given K
 class KMeansClustering:
 	
 	def __init__(self, K, maxIterations, epsilon, numRuns):
@@ -21,13 +23,14 @@ class KMeansClustering:
 		self.sseAvg = 0;
 		for run in range(numRuns):
 			self.sseAvg += self.fit();
-			self.dataCentroids = [];
-			self.centroids = [];
+			if run < numRuns-1:
+				self.dataCentroids = [];
+				self.centroids = [];
 		self.sseAvg /= numRuns;
-		print("Average sse val for "+str(self.K)+": ");
-		print(self.sseAvg)
+		print("Average SSE value for "+str(self.K)+": " + str(self.sseAvg));
 		
 
+	## Load the given data (seeds.txt) in Data folder
 	def loadData(self):
 		dataDirectory = "Data";
 		dataFile = "seeds.txt";
@@ -35,19 +38,20 @@ class KMeansClustering:
 			for line in file:
 				self.data.append([float(x) for x in line.strip().split()]);
 		self.dataPoints = [None]*len(self.data);
-					
+	
+
+	## Initialize the K centroids randomly				
 	def initializeCentroids(self):
 		centroids = rd.sample(range(len(self.data)), self.K);
-		#print(centroids)
 		for x in centroids:
 			self.dataCentroids.append(self.data[x]);
 			self.centroids.append([]);
-		#print(self.centroids);
 		
+
+	## Update the distances of all points from the closest cluster
 	def updateDistances(self):
 		for x in range(len(self.centroids)):
 			self.centroids[x] = [];
-		#print(self.centroids)
 		for x in range(len(self.data)):
 			minDistance = sys.maxsize;
 			minCentroid = 0;
@@ -60,23 +64,10 @@ class KMeansClustering:
 				if distance < minDistance:
 					minDistance = distance;
 					minCentroid = centroid;
-			#print(x)
-			#print(minDistance)
-			#print(minCentroid)
 			self.centroids[minCentroid].append(x);
-		#print(self.centroids)
-			
-		#print(self.dataPoints[180]);
-		#print(self.data[180]);
-		#print(self.data[self.dataPoints[180][0][0]])
-		#print(self.data[self.dataPoints[180][1][0]])
-		#print(self.data[self.dataPoints[180][2][0]])
-		#for x in range(210):
-			#print(str(x)+": "+str(self.dataPoints[x]))
 	
+	## Update the centroids based on the points in the cluster
 	def updateCentroids(self):
-		#print("HIII")
-		#print(self.centroids);
 		for oldCentroidIdx in range(self.K):
 			sumPoints = [0]*len(self.data[0]);
 			for x in self.centroids[oldCentroidIdx]:
@@ -84,9 +75,9 @@ class KMeansClustering:
 			length = len(self.centroids[oldCentroidIdx]);
 			newCentroid = [elem/length for elem in sumPoints];
 
-			#print(newCentroid);
 			self.dataCentroids[oldCentroidIdx] = newCentroid;
-		
+	
+	## Compute Sum of Squared Mean for all points
 	def computeSSE(self):
 		sumDistances = 0;
 		for centroid in range(self.K):
@@ -97,6 +88,8 @@ class KMeansClustering:
 				sumDistances += distance**2;
 		return sumDistances;
 
+
+	## Fit the K-means algorithm to the given data
 	def fit(self):
 		self.initializeCentroids();
 		sseVals = [];
@@ -106,23 +99,28 @@ class KMeansClustering:
 			sse = self.computeSSE();
 			sseVals.append(sse);
 			if len(sseVals) > 1 and abs(sseVals[len(sseVals)-1] - sseVals[len(sseVals)-2]) < self.epsilon:
-				#print(sseVals[len(sseVals)-1]);
-				#print(sseVals[len(sseVals)-2])
-				#print("ended by: "+str(x))
 				break;
-		#print(len(self.centroids))
-		#print(self.centroids)
-		#print(self.dataCentroids)
-		#print(sseVals)
 		return sseVals[len(sseVals)-1];
 
+
+
 def main():
-	K = [3, 5, 7];
-	maxIterations = 100;
-	epsilon = 0.001;
-	numRuns = 10;
-	for kval in K:	
-		KMeans = KMeansClustering(kval, maxIterations, epsilon, numRuns);
+
+	K = [3, 5, 7];	# all K values
+	maxIterations = 100;	# maximum iterations
+	epsilon = 0.001;	# stopping criteria 
+	numRuns = 10;	# Number of runs to average
+	
+	for kval in K:
+		
+		## My Algorithm	
+		kmeansMine = KMeansClustering(kval, maxIterations, epsilon, numRuns);
+		
+		# # sklearn library to confirm my results
+		# kmeans = KMeans(kval, max_iter=100, tol=epsilon)
+		# kmeans.fit(kmeansMine.data)
+		# print(kmeans.inertia_);
+		# [print(x) for x in kmeans.cluster_centers_];
 	
 if __name__ == '__main__':
 	main();
